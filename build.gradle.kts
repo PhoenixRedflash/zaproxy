@@ -54,8 +54,8 @@ allprojects {
 
 sonarqube {
     properties {
-        property("sonar.projectKey", "zaproxy_zaproxy")
-        property("sonar.organization", "zaproxy")
+        property("sonar.projectKey", "PhoenixRedflash_zaproxy")
+        property("sonar.organization", "phoenixredflash")
         property("sonar.host.url", "https://sonarcloud.io")
     }
 }
