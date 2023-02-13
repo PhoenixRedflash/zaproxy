@@ -1,0 +1,20 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ZAP
+  description: 
+    The OWASP Zed Attack Proxy (ZAP) can help you automatically find security vulnerabilities in your web applications while you are developing and testing your applications. 
+  links:
+    - title: Website
+      url: https://github.com/PhoenixRedflash/zaproxy
+    - title: Documentation
+      url: https://www.zaproxy.org/
+    - title: Security scan
+      url: https://eteamspace.internal.ericsson.com/display/EWS/Security+scan+for+ZAP
+  annotations:
+    github.com/project-slug:  "PhoenixRedflash/zaproxy" 
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  owner: "Group:sre"
+  lifecycle: experimental
