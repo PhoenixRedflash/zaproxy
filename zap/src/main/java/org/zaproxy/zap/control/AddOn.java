@@ -328,40 +328,7 @@ public class AddOn {
      */
     private boolean mandatory;
 
-    private static final Logger logger = LogManager.getLogger(AddOn.class);
-
-    /**
-     * Tells whether or not the given file name matches the name of a ZAP add-on.
-     *
-     * <p>The file name must have the format "{@code <id>-<status>-<version>.zap}". The {@code id}
-     * is a string, the {@code status} must be a value from {@link Status} and the {@code version}
-     * must be an integer.
-     *
-     * @param fileName the name of the file to check
-     * @return {@code true} if the given file name is the name of an add-on, {@code false}
-     *     otherwise.
-     * @deprecated (2.6.0) Use {@link #isAddOnFileName(String)} instead, the checks done in this
-     *     method are more strict than it needs to.
-     * @see #isAddOnFileName(String)
-     */
-    @Deprecated
-    public static boolean isAddOn(String fileName) {
-        if (!isAddOnFileName(fileName)) {
-            return false;
-        }
-        if (fileName.substring(0, fileName.indexOf(".")).split("-").length < 3) {
-            return false;
-        }
-        String[] strArray = fileName.substring(0, fileName.indexOf(".")).split("-");
-        try {
-            Status.valueOf(strArray[1]);
-            Integer.parseInt(strArray[2]);
-        } catch (Exception e) {
-            return false;
-        }
-
-        return true;
-    }
+    private static final Logger LOGGER = LogManager.getLogger(AddOn.class);
 
     /**
      * Tells whether or not the given file name matches the name of a ZAP add-on.
@@ -378,18 +345,6 @@ public class AddOn {
             return false;
         }
         return fileName.toLowerCase(Locale.ROOT).endsWith(FILE_EXTENSION);
-    }
-
-    /**
-     * Tells whether or not the given file is an add-on.
-     *
-     * @param f the file to be checked
-     * @return {@code true} if the given file is an add-on, {@code false} otherwise.
-     * @deprecated (2.6.0) Use {@link #isAddOn(Path)} instead.
-     */
-    @Deprecated
-    public static boolean isAddOn(File f) {
-        return isAddOn(f.toPath());
     }
 
     /**
@@ -460,12 +415,11 @@ public class AddOn {
                         e -> {
                             ZipEntry libEntry = zip.getEntry(e);
                             if (libEntry == null) {
-                                logger.warn("The add-on " + file + " does not have the lib: " + e);
+                                LOGGER.warn("The add-on {} does not have the lib: {}", file, e);
                                 return true;
                             }
                             if (libEntry.isDirectory()) {
-                                logger.warn(
-                                        "The add-on " + file + " does not have a file lib: " + e);
+                                LOGGER.warn("The add-on {} does not have a file lib: {}", file, e);
                                 return true;
                             }
                             return false;
@@ -488,53 +442,15 @@ public class AddOn {
             return Optional.of(new AddOn(file));
         } catch (AddOn.InvalidAddOnException e) {
             String logMessage = "Invalid add-on: " + file.toString() + ".";
-            if (logger.isDebugEnabled() || Constant.isDevMode()) {
-                logger.warn(logMessage, e);
+            if (LOGGER.isDebugEnabled() || Constant.isDevMode()) {
+                LOGGER.warn(logMessage, e);
             } else {
-                logger.warn(logMessage + " " + e.getMessage());
+                LOGGER.warn("{} {}", logMessage, e.getMessage());
             }
         } catch (Exception e) {
-            logger.error("Failed to create an add-on from: " + file.toString(), e);
+            LOGGER.error("Failed to create an add-on from: {}", file, e);
         }
         return Optional.empty();
-    }
-
-    /**
-     * Constructs an {@code AddOn} with the given file name.
-     *
-     * @param fileName the file name of the add-on
-     * @throws Exception if the file name is not valid.
-     * @deprecated (2.6.0) Use {@link #AddOn(Path)} instead.
-     */
-    @Deprecated
-    public AddOn(String fileName) throws Exception {
-        // Format is <name>-<status>-<version>.zap
-        if (!isAddOn(fileName)) {
-            throw new Exception("Invalid ZAP add-on file " + fileName);
-        }
-        String[] strArray = fileName.substring(0, fileName.indexOf(".")).split("-");
-        this.id = strArray[0];
-        this.name = this.id; // Will be overridden if theres a ZapAddOn.xml file
-        this.status = Status.valueOf(strArray[1]);
-        this.version = new Version(Integer.parseInt(strArray[2]) + ".0.0");
-    }
-
-    /**
-     * Constructs an {@code AddOn} from the given {@code file}.
-     *
-     * <p>The {@value #MANIFEST_FILE_NAME} ZIP file entry is read after validating that the add-on
-     * has a valid add-on file name.
-     *
-     * <p>The installation status of the add-on is 'not installed'.
-     *
-     * @param file the file of the add-on
-     * @throws Exception if the given {@code file} does not exist, does not have a valid add-on file
-     *     name or an error occurred while reading the {@code value #ZAP_ADD_ON_XML} ZIP file entry
-     * @deprecated (2.6.0) Use {@link #AddOn(Path)} instead.
-     */
-    @Deprecated
-    public AddOn(File file) throws Exception {
-        this(file.toPath());
     }
 
     /**
@@ -627,9 +543,6 @@ public class AddOn {
      * Constructs an {@code AddOn} from an add-on entry of {@code ZapVersions.xml} file. The
      * installation status of the add-on is 'not installed'.
      *
-     * <p>The given {@code SubnodeConfiguration} must have a {@code XPathExpressionEngine}
-     * installed.
-     *
      * <p>The {@value #MANIFEST_FILE_NAME} ZIP file entry is read, if the add-on file exists
      * locally.
      *
@@ -638,7 +551,6 @@ public class AddOn {
      * @param xmlData the source of add-on entry of {@code ZapVersions.xml} file
      * @throws MalformedURLException if the {@code URL} of the add-on is malformed
      * @throws IOException if an error occurs while reading the XML data
-     * @see org.apache.commons.configuration.tree.xpath.XPathExpressionEngine
      */
     public AddOn(String id, File baseDir, SubnodeConfiguration xmlData)
             throws MalformedURLException, IOException {
@@ -671,7 +583,7 @@ public class AddOn {
             try {
                 return new URL(url);
             } catch (Exception e) {
-                logger.warn("Invalid URL for add-on \"" + id + "\": " + url, e);
+                LOGGER.warn("Invalid URL for add-on \"{}\": {}", id, url, e);
             }
         }
         return null;
@@ -864,15 +776,8 @@ public class AddOn {
                 try {
                     this.loadManifestFile();
                 } catch (IOException e) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(
-                                "Failed to read the "
-                                        + AddOn.MANIFEST_FILE_NAME
-                                        + " file of "
-                                        + id
-                                        + ":",
-                                e);
-                    }
+                    LOGGER.debug(
+                            "Failed to read the {} file of {}:", AddOn.MANIFEST_FILE_NAME, id, e);
                 }
             }
         }
@@ -1237,16 +1142,6 @@ public class AddOn {
     }
 
     /**
-     * @deprecated (2.4.0) Use {@link #calculateRunRequirements(Collection)} instead. Returns {@code
-     *     false}.
-     * @return {@code false} always.
-     */
-    @Deprecated
-    public boolean canLoad() {
-        return false;
-    }
-
-    /**
      * Tells whether or not this add-on can be loaded in the currently running ZAP version, as given
      * by {@code Constant.PROGRAM_VERSION}.
      *
@@ -1366,18 +1261,15 @@ public class AddOn {
         if (installedVersion != null && !addOn.equals(installedVersion)) {
             requirements.setIssue(
                     BaseRunRequirements.DependencyIssue.OLDER_VERSION, installedVersion);
-            if (logger.isDebugEnabled()) {
-                logger.debug(
-                        "Add-on "
-                                + addOn
-                                + " not runnable, old version still installed: "
-                                + installedVersion);
-            }
+            LOGGER.debug(
+                    "Add-on {} not runnable, old version still installed: {}",
+                    addOn,
+                    installedVersion);
             return;
         }
 
         if (!requirements.addDependency(parent, addOn)) {
-            logger.warn("Cyclic dependency detected with: " + requirements.getDependencies());
+            LOGGER.warn("Cyclic dependency detected with: {}", requirements.getDependencies());
             requirements.setIssue(
                     BaseRunRequirements.DependencyIssue.CYCLIC, requirements.getDependencies());
             return;
@@ -2468,6 +2360,7 @@ public class AddOn {
      * @since 2.8.0
      * @see #getValidationResult()
      */
+    @SuppressWarnings("serial")
     public static class InvalidAddOnException extends IOException {
 
         private static final long serialVersionUID = 1L;

@@ -22,7 +22,6 @@ package org.zaproxy.zap.extension.api;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.parosproxy.paros.core.proxy.ProxyParam;
+import org.mockito.quality.Strictness;
 import org.parosproxy.paros.network.HttpHeader;
 import org.parosproxy.paros.network.HttpInputStream;
 import org.parosproxy.paros.network.HttpMessage;
@@ -552,7 +551,7 @@ class APIUnitTest {
         ApiException e =
                 assertThrows(ApiException.class, () -> API.responseToXml(endpointName, response));
         // Then
-        assertThat(e.getMessage(), containsString("internal_error"));
+        assertThat(e.getType(), is(equalTo(ApiException.Type.INTERNAL_ERROR)));
     }
 
     @Test
@@ -564,7 +563,7 @@ class APIUnitTest {
         ApiException e =
                 assertThrows(ApiException.class, () -> API.responseToXml(endpointName, response));
         // Then
-        assertThat(e.getMessage(), containsString("internal_error"));
+        assertThat(e.getType(), is(equalTo(ApiException.Type.INTERNAL_ERROR)));
     }
 
     @Test
@@ -576,7 +575,7 @@ class APIUnitTest {
         ApiException e =
                 assertThrows(ApiException.class, () -> API.responseToXml(endpointName, response));
         // Then
-        assertThat(e.getMessage(), containsString("internal_error"));
+        assertThat(e.getType(), is(equalTo(ApiException.Type.INTERNAL_ERROR)));
     }
 
     @Test
@@ -588,7 +587,7 @@ class APIUnitTest {
         ApiException e =
                 assertThrows(ApiException.class, () -> API.responseToXml(endpointName, response));
         // Then
-        assertThat(e.getMessage(), containsString("internal_error"));
+        assertThat(e.getType(), is(equalTo(ApiException.Type.INTERNAL_ERROR)));
     }
 
     @Test
@@ -672,7 +671,8 @@ class APIUnitTest {
             URI requestUri = Mockito.mock(URI.class);
             when(requestUri.getPath()).thenReturn(requestPath);
             HttpRequestHeader request =
-                    Mockito.mock(HttpRequestHeader.class, withSettings().lenient());
+                    Mockito.mock(
+                            HttpRequestHeader.class, withSettings().strictness(Strictness.LENIENT));
             when(request.getURI()).thenReturn(requestUri);
             when(request.getHeader(HttpHeader.X_ZAP_API_NONCE)).thenReturn(nonce);
             when(request.getSenderAddress())
@@ -710,8 +710,11 @@ class APIUnitTest {
         return optionsParamApi;
     }
 
-    private static ProxyParam createProxyParam(String proxyAddress, int proxyPort) {
-        ProxyParam proxyParam = new ProxyParam();
+    @SuppressWarnings("deprecation")
+    private static org.parosproxy.paros.core.proxy.ProxyParam createProxyParam(
+            String proxyAddress, int proxyPort) {
+        org.parosproxy.paros.core.proxy.ProxyParam proxyParam =
+                new org.parosproxy.paros.core.proxy.ProxyParam();
         proxyParam.load(new ZapXmlConfiguration());
         proxyParam.setProxyIp(proxyAddress);
         proxyParam.setProxyPort(proxyPort);

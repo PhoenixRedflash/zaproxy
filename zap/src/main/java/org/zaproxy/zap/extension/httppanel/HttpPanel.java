@@ -58,9 +58,9 @@ import org.zaproxy.zap.extension.httppanel.view.HttpPanelDefaultViewSelector;
 import org.zaproxy.zap.extension.httppanel.view.HttpPanelView;
 import org.zaproxy.zap.extension.search.SearchMatch;
 import org.zaproxy.zap.extension.search.SearchableHttpPanelComponent;
-import org.zaproxy.zap.extension.tab.Tab;
 
-public abstract class HttpPanel extends AbstractPanel implements Tab {
+@SuppressWarnings("serial")
+public abstract class HttpPanel extends AbstractPanel {
 
     public enum OptionsLocation {
         BEGIN,
@@ -70,7 +70,7 @@ public abstract class HttpPanel extends AbstractPanel implements Tab {
 
     private static final long serialVersionUID = 5221591643257366570L;
 
-    private static final Logger logger = LogManager.getLogger(HttpPanel.class);
+    private static final Logger LOGGER = LogManager.getLogger(HttpPanel.class);
 
     private static final String NO_SUITABLE_COMPONENT_FOUND_LABEL =
             Constant.messages.getString("http.panel.noSuitableComponentFound");
@@ -249,7 +249,7 @@ public abstract class HttpPanel extends AbstractPanel implements Tab {
             }
         }
 
-        if (enabledComponents.size() == 0) {
+        if (enabledComponents.isEmpty()) {
             currentComponent = null;
             switchEmptyComponent();
             notifyDisplayedMessageChangedListeners(oldMessage, message);
@@ -370,7 +370,7 @@ public abstract class HttpPanel extends AbstractPanel implements Tab {
         HttpPanelComponentInterface newComponent = components.get(name);
 
         if (newComponent == null) {
-            logger.info("No component found with name: " + name);
+            LOGGER.info("No component found with name: {}", name);
             return;
         }
 
@@ -513,7 +513,7 @@ public abstract class HttpPanel extends AbstractPanel implements Tab {
     private void disableComponent(HttpPanelComponentInterface component) {
         toolBarComponents.remove(component.getButton());
         enabledComponents.remove(component);
-        if (enabledComponents.size() == 0) {
+        if (enabledComponents.isEmpty()) {
             toolBarComponents.removeAll();
         }
     }
@@ -600,6 +600,11 @@ public abstract class HttpPanel extends AbstractPanel implements Tab {
             Iterator<HttpPanelComponentInterface> it = components.values().iterator();
             while (it.hasNext()) {
                 it.next().loadConfig(fileConfiguration);
+            }
+
+            if (savedLastSelectedComponentName != null
+                    && components.containsKey(savedLastSelectedComponentName)) {
+                switchComponent(savedLastSelectedComponentName);
             }
         }
     }

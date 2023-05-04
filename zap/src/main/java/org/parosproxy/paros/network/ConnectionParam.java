@@ -50,6 +50,11 @@
 // ZAP: 2020/04/20 Allow to configure the SOCKS proxy (Issue 29).
 // ZAP: 2020/11/26 Use Log4j 2 classes for logging.
 // ZAP: 2021/10/06 Updated default user agent
+// ZAP: 2022/02/02 Removed getProxyChainSkipName() and setProxyChainSkipName(String)
+// ZAP: 2022/02/08 Use isEmpty where applicable.
+// ZAP: 2022/05/04 Deprecate single cookie request header option.
+// ZAP: 2022/05/20 Deprecate the class.
+// ZAP: 2022/09/21 Use format specifiers instead of concatenation when logging.
 package org.parosproxy.paros.network;
 
 import java.net.PasswordAuthentication;
@@ -67,8 +72,9 @@ import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.common.AbstractParam;
 import org.zaproxy.zap.extension.api.ZapApiIgnore;
 import org.zaproxy.zap.network.DomainMatcher;
-import org.zaproxy.zap.network.SocksProxy;
 
+/** @deprecated (2.12.0) Use the network add-on instead. */
+@Deprecated
 public class ConnectionParam extends AbstractParam {
 
     // ZAP: Added logger
@@ -149,7 +155,8 @@ public class ConnectionParam extends AbstractParam {
      *
      * @since 2.10.0
      */
-    public static final SocksProxy DEFAULT_SOCKS_PROXY = new SocksProxy("localhost", 1080);
+    public static final org.zaproxy.zap.network.SocksProxy DEFAULT_SOCKS_PROXY =
+            new org.zaproxy.zap.network.SocksProxy("localhost", 1080);
 
     /**
      * Pattern with loopback names and addresses that should be always resolved (when creating the
@@ -172,7 +179,7 @@ public class ConnectionParam extends AbstractParam {
     private String proxyChainPassword = "";
 
     private boolean useSocksProxy;
-    private SocksProxy socksProxy = DEFAULT_SOCKS_PROXY;
+    private org.zaproxy.zap.network.SocksProxy socksProxy = DEFAULT_SOCKS_PROXY;
     private PasswordAuthentication socksProxyPasswordAuth =
             new PasswordAuthentication("", new char[0]);
 
@@ -318,7 +325,7 @@ public class ConnectionParam extends AbstractParam {
                         Pattern pattern = Pattern.compile(excludedDomain, Pattern.CASE_INSENSITIVE);
                         excludedDomains.add(new DomainMatcher(pattern));
                     } catch (IllegalArgumentException e) {
-                        log.error("Failed to migrate the excluded domain name: " + name, e);
+                        log.error("Failed to migrate the excluded domain name: {}", name, e);
                     }
                 } else {
                     excludedDomains.add(new DomainMatcher(excludedDomain));
@@ -402,31 +409,6 @@ public class ConnectionParam extends AbstractParam {
     public void setProxyChainPort(int proxyChainPort) {
         this.proxyChainPort = proxyChainPort;
         getConfig().setProperty(PROXY_CHAIN_PORT, Integer.toString(this.proxyChainPort));
-    }
-
-    /**
-     * @deprecated (2.3.0) Replaced by {@link #getProxyExcludedDomains()} and {@link
-     *     #getProxyExcludedDomainsEnabled()}. <strong>Note:</strong> Newer regular expression
-     *     excluded domains will not be returned by this method.
-     */
-    @Deprecated
-    @ZapApiIgnore
-    @SuppressWarnings({"javadoc"})
-    public String getProxyChainSkipName() {
-        StringBuilder skipNamesStringBuilder = new StringBuilder("");
-        for (DomainMatcher excludedDomain : proxyExcludedDomains) {
-            if (!excludedDomain.isRegex()) {
-                skipNamesStringBuilder.append(excludedDomain.getValue()).append(';');
-            }
-        }
-        return skipNamesStringBuilder.toString();
-    }
-
-    /** @deprecated (2.3.0) Replaced by {@link #setProxyExcludedDomains(List)}. */
-    @Deprecated
-    @SuppressWarnings({"javadoc"})
-    public void setProxyChainSkipName(String proxyChainSkipName) {
-        setProxyExcludedDomains(convertOldSkipNameOption(proxyChainSkipName));
     }
 
     /**
@@ -583,9 +565,12 @@ public class ConnectionParam extends AbstractParam {
      *
      * @return {@code true} if the cookies should be set on a single request header, {@code false}
      *     otherwise
+     * @deprecated (2.12.0) No longer supported, when managing cookies they will be sent in a single
+     *     header field.
      */
+    @Deprecated
     public boolean isSingleCookieRequestHeader() {
-        return this.singleCookieRequestHeader;
+        return true;
     }
 
     /**
@@ -594,11 +579,11 @@ public class ConnectionParam extends AbstractParam {
      *
      * @param singleCookieRequestHeader {@code true} if the cookies should be set on a single
      *     request header, {@code false} otherwise
+     * @deprecated (2.12.0) No longer supported, when managing cookies they will be sent in a single
+     *     header field.
      */
-    public void setSingleCookieRequestHeader(boolean singleCookieRequestHeader) {
-        this.singleCookieRequestHeader = singleCookieRequestHeader;
-        getConfig().setProperty(SINGLE_COOKIE_REQUEST_HEADER, singleCookieRequestHeader);
-    }
+    @Deprecated
+    public void setSingleCookieRequestHeader(boolean singleCookieRequestHeader) {}
 
     /**
      * Returns the domains excluded from the outgoing proxy.
@@ -699,8 +684,8 @@ public class ConnectionParam extends AbstractParam {
                     excludedDomain = new DomainMatcher(pattern);
                 } catch (IllegalArgumentException e) {
                     log.error(
-                            "Failed to read an outgoing proxy excluded domain entry with regex: "
-                                    + value,
+                            "Failed to read an outgoing proxy excluded domain entry with regex: {}",
+                            value,
                             e);
                 }
             } else {
@@ -791,7 +776,7 @@ public class ConnectionParam extends AbstractParam {
 
     private void loadSecurityProtocolsEnabled() {
         List<Object> protocols = getConfig().getList(ALL_SECURITY_PROTOCOLS_ENABLED_KEY);
-        if (protocols.size() != 0) {
+        if (!protocols.isEmpty()) {
             securityProtocolsEnabled = new String[protocols.size()];
             securityProtocolsEnabled = protocols.toArray(securityProtocolsEnabled);
             setClientEnabledProtocols();
@@ -805,12 +790,10 @@ public class ConnectionParam extends AbstractParam {
             SSLConnector.setClientEnabledProtocols(securityProtocolsEnabled);
         } catch (IllegalArgumentException e) {
             log.warn(
-                    "Failed to set persisted protocols "
-                            + Arrays.toString(securityProtocolsEnabled)
-                            + " falling back to "
-                            + Arrays.toString(SSLConnector.getFailSafeProtocols())
-                            + " caused by: "
-                            + e.getMessage());
+                    "Failed to set persisted protocols {} falling back to {} caused by: {}",
+                    Arrays.toString(securityProtocolsEnabled),
+                    Arrays.toString(SSLConnector.getFailSafeProtocols()),
+                    e.getMessage());
             securityProtocolsEnabled = SSLConnector.getFailSafeProtocols();
             SSLConnector.setClientEnabledProtocols(securityProtocolsEnabled);
         }
@@ -883,7 +866,12 @@ public class ConnectionParam extends AbstractParam {
             useSocksProxy = getBoolean(USE_SOCKS_PROXY_KEY, false);
         }
 
-        socksProxy = new SocksProxy(host, port, SocksProxy.Version.from(version), useDns);
+        socksProxy =
+                new org.zaproxy.zap.network.SocksProxy(
+                        host,
+                        port,
+                        org.zaproxy.zap.network.SocksProxy.Version.from(version),
+                        useDns);
         if (useSocksProxy) {
             apply(socksProxy);
         }
@@ -903,7 +891,7 @@ public class ConnectionParam extends AbstractParam {
         try {
             port = Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            log.warn("Failed to parse the SOCKS port: " + value, e);
+            log.warn("Failed to parse the SOCKS port: {}", value, e);
             return DEFAULT_SOCKS_PROXY.getPort();
         }
 
@@ -911,7 +899,7 @@ public class ConnectionParam extends AbstractParam {
             return port;
         }
 
-        log.warn("Invalid SOCKS port: " + value);
+        log.warn("Invalid SOCKS port: {}", value);
         return DEFAULT_SOCKS_PROXY.getPort();
     }
 
@@ -923,7 +911,7 @@ public class ConnectionParam extends AbstractParam {
      *
      * @param socksProxy the SOCKS proxy to apply.
      */
-    private void apply(SocksProxy socksProxy) {
+    private void apply(org.zaproxy.zap.network.SocksProxy socksProxy) {
         String host = "";
         String port = "";
         String version = "";
@@ -953,7 +941,7 @@ public class ConnectionParam extends AbstractParam {
     public boolean shouldResolveRemoteHostname(String hostname) {
         if (!useSocksProxy
                 || !socksProxy.isUseDns()
-                || socksProxy.getVersion() != SocksProxy.Version.SOCKS5) {
+                || socksProxy.getVersion() != org.zaproxy.zap.network.SocksProxy.Version.SOCKS5) {
             return true;
         }
         return LOOPBACK_PATTERN.matcher(hostname).matches();
@@ -978,7 +966,7 @@ public class ConnectionParam extends AbstractParam {
      *     false} otherwise.
      * @since 2.10.0
      * @see #isUseSocksProxy()
-     * @see #setSocksProxy(SocksProxy)
+     * @see #setSocksProxy(org.zaproxy.zap.network.SocksProxy)
      */
     public void setUseSocksProxy(boolean useSocksProxy) {
         if (this.useSocksProxy == useSocksProxy) {
@@ -998,10 +986,10 @@ public class ConnectionParam extends AbstractParam {
      * @return the SOCKS proxy, never {@code null}.
      * @since 2.10.0
      * @see #isUseSocksProxy()
-     * @see #setSocksProxy(SocksProxy)
+     * @see #setSocksProxy(org.zaproxy.zap.network.SocksProxy)
      */
     @ZapApiIgnore
-    public SocksProxy getSocksProxy() {
+    public org.zaproxy.zap.network.SocksProxy getSocksProxy() {
         return socksProxy;
     }
 
@@ -1014,7 +1002,7 @@ public class ConnectionParam extends AbstractParam {
      * @see #getSocksProxy()
      * @see #setUseSocksProxy(boolean)
      */
-    public void setSocksProxy(SocksProxy socksProxy) {
+    public void setSocksProxy(org.zaproxy.zap.network.SocksProxy socksProxy) {
         if (this.socksProxy.equals(socksProxy)) {
             return;
         }

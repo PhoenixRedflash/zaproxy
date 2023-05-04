@@ -50,6 +50,7 @@ import org.zaproxy.zap.utils.DisplayUtils;
  *
  * @since 2.2.0
  */
+@SuppressWarnings("serial")
 public class TabbedPanel2 extends TabbedPanel {
 
     private static final long serialVersionUID = 1L;
@@ -66,7 +67,7 @@ public class TabbedPanel2 extends TabbedPanel {
     // A fake component that never actually get displayed - used for the 'hidden tab list tab'
     private Component hiddenComponent = new JLabel();
 
-    private final Logger logger = LogManager.getLogger(TabbedPanel2.class);
+    private static final Logger LOGGER = LogManager.getLogger(TabbedPanel2.class);
 
     private int prevTabIndex = -1;
 
@@ -132,21 +133,6 @@ public class TabbedPanel2 extends TabbedPanel {
             }
         }
         menu.show(this, this.getMousePosition().x, this.getMousePosition().y);
-    }
-
-    /**
-     * Clones the given tabbed panel.
-     *
-     * @param tabbedPanel the tabbed panel to clone
-     * @return the cloned tabbed panel
-     * @deprecated (2.5.0) The implementation is not correct, not all state is correctly cloned.
-     */
-    @Deprecated
-    public TabbedPanel2 clone(TabbedPanel2 tabbedPanel) {
-        TabbedPanel2 t = new TabbedPanel2();
-        t.fullTabList = new ArrayList<>(tabbedPanel.fullTabList);
-        t.hiddenTabs = new ArrayList<>(tabbedPanel.hiddenTabs);
-        return t;
     }
 
     private void setCloseButtonStates() {
@@ -218,7 +204,7 @@ public class TabbedPanel2 extends TabbedPanel {
         try {
             Model.getSingleton().getOptionsParam().getConfig().save();
         } catch (ConfigurationException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 

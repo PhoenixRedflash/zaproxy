@@ -209,7 +209,7 @@ public final class AddOnRunIssuesUtils {
                 case CYCLIC:
                     message =
                             Constant.messages.getString(
-                                    "cfu.warn.addon.with.missing.requirements.addon.id");
+                                    "cfu.warn.addon.with.missing.requirements.addon.cyclic");
                     break;
                 case OLDER_VERSION:
                     // Do not set a message, the state is already reported as requiring an update.
@@ -250,10 +250,9 @@ public final class AddOnRunIssuesUtils {
                             Constant.messages.getString(
                                     "cfu.warn.addon.with.missing.requirements.unknown");
                     LOGGER.warn(
-                            "Failed to handle dependency issue with name \""
-                                    + requirements.getDependencyIssue().name()
-                                    + "\" and details: "
-                                    + issueDetails);
+                            "Failed to handle dependency issue with name \"{}\" and details: {}",
+                            requirements.getDependencyIssue().name(),
+                            issueDetails);
                     break;
             }
 
@@ -422,10 +421,9 @@ public final class AddOnRunIssuesUtils {
                         addOn.getSemVer() != null ? addOn.getSemVer() : addOn.getVersion());
             default:
                 LOGGER.warn(
-                        "Failed to handle dependency issue with name \""
-                                + requirements.getDependencyIssue().name()
-                                + "\" and details: "
-                                + issueDetails);
+                        "Failed to handle dependency issue with name \"{}\" and details: {}",
+                        requirements.getDependencyIssue().name(),
+                        issueDetails);
                 return null;
         }
     }

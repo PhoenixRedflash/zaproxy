@@ -47,6 +47,9 @@
 // ZAP: 2019/06/01 Normalise line endings.
 // ZAP: 2019/06/05 Normalise format/style.
 // ZAP: 2020/11/26 Use Log4j 2 classes for logging.
+// ZAP: 2022/02/03 Removed deprecated prepareShow method
+// ZAP: 2022/08/05 Address warns with Java 18 (Issue 7389).
+// ZAP: 2023/01/10 Tidy up logger.
 package org.parosproxy.paros.view;
 
 import java.awt.Component;
@@ -75,6 +78,7 @@ import org.zaproxy.zap.view.popup.ExtensionPopupMenuComponent;
 import org.zaproxy.zap.view.popup.PopupMenuUtils;
 import org.zaproxy.zap.view.popup.PopupMenuUtils.PopupMenuInvokerWrapper;
 
+@SuppressWarnings("serial")
 public class MainPopupMenu extends JPopupMenu {
 
     private static final long serialVersionUID = -3021348328961418293L;
@@ -84,7 +88,7 @@ public class MainPopupMenu extends JPopupMenu {
     // ZAP: Added support for submenus
     Map<String, JMenu> superMenus = new HashMap<>();
     View view = null;
-    private static Logger log = LogManager.getLogger(MainPopupMenu.class);
+    private static final Logger LOGGER = LogManager.getLogger(MainPopupMenu.class);
 
     /**
      * The change listener responsible for updating the {@code pathSelectedMenu} when the path to
@@ -163,7 +167,7 @@ public class MainPopupMenu extends JPopupMenu {
                     }
                 }
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
         }
 
@@ -173,7 +177,6 @@ public class MainPopupMenu extends JPopupMenu {
                 handleMenuItem(invoker, (ExtensionPopupMenuItem) menuItem);
             } else if (menuItem instanceof ExtensionPopupMenu) {
                 ExtensionPopupMenu item = (ExtensionPopupMenu) menuItem;
-                prepareShow(item);
                 handleMenu(invoker, item);
             }
         }
@@ -213,19 +216,6 @@ public class MainPopupMenu extends JPopupMenu {
                 }
             }
         }
-    }
-
-    /**
-     * The method {@code ExtensionPopupMenu#prepareShow()} is deprecated but it must still be called
-     * for backward compatibility, so to avoid hiding future deprecations of other methods/classes
-     * this method was added to suppress the deprecation warning locally (instead of the whole
-     * method {@code showImpl(PopupMenuInvokerWrapper, int, int))}).
-     *
-     * @see ExtensionPopupMenu#prepareShow()
-     */
-    @SuppressWarnings({"deprecation", "javadoc"})
-    private static void prepareShow(ExtensionPopupMenu popupMenu) {
-        popupMenu.prepareShow();
     }
 
     private void handleMenuItem(
@@ -272,7 +262,7 @@ public class MainPopupMenu extends JPopupMenu {
             }
 
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -306,7 +296,7 @@ public class MainPopupMenu extends JPopupMenu {
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 

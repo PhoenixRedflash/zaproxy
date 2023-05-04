@@ -43,9 +43,12 @@
 // ZAP: 2019/06/05 Normalise format/style.
 // ZAP: 2020/11/26 Use Log4j 2 classes for logging.
 // ZAP: 2021/05/25 Change the default value of userDirectory from null to the user's home directory.
+// ZAP: 2022/02/09 Deprecate methods related to core proxy options.
+// ZAP: 2022/05/20 Deprecate methods related to core connection options.
+// ZAP: 2022/05/29 Deprecate methods related to core client certificates.
+// ZAP: 2023/01/10 Tidy up logger.
 package org.parosproxy.paros.model;
 
-import ch.csnc.extension.util.OptionsParamExperimentalSliSupport;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,11 +58,8 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.common.AbstractParam;
-import org.parosproxy.paros.core.proxy.ProxyParam;
 import org.parosproxy.paros.extension.option.DatabaseParam;
-import org.parosproxy.paros.extension.option.OptionsParamCertificate;
 import org.parosproxy.paros.extension.option.OptionsParamView;
-import org.parosproxy.paros.network.ConnectionParam;
 import org.zaproxy.zap.extension.anticsrf.AntiCsrfParam;
 import org.zaproxy.zap.extension.api.OptionsParamApi;
 import org.zaproxy.zap.extension.autoupdate.OptionsParamCheckForUpdates;
@@ -68,22 +68,33 @@ import org.zaproxy.zap.extension.globalexcludeurl.GlobalExcludeURLParam;
 
 public class OptionsParam extends AbstractParam {
 
-    private static final Logger logger = LogManager.getLogger(OptionsParam.class);
+    private static final Logger LOGGER = LogManager.getLogger(OptionsParam.class);
 
     //	private static final String ROOT = "Options";
     // ZAP: User directory now stored in the config file
     private static final String USER_DIR = "userDir";
 
-    private ProxyParam proxyParam = new ProxyParam();
-    private ConnectionParam connectionParam = new ConnectionParam();
+    @SuppressWarnings("deprecation")
+    private org.parosproxy.paros.core.proxy.ProxyParam proxyParam =
+            new org.parosproxy.paros.core.proxy.ProxyParam();
+
+    @SuppressWarnings("deprecation")
+    private org.parosproxy.paros.network.ConnectionParam connectionParam =
+            new org.parosproxy.paros.network.ConnectionParam();
+
     private OptionsParamView viewParam = new OptionsParamView();
-    private OptionsParamCertificate certificateParam = new OptionsParamCertificate();
+
+    @SuppressWarnings("deprecation")
+    private org.parosproxy.paros.extension.option.OptionsParamCertificate certificateParam =
+            new org.parosproxy.paros.extension.option.OptionsParamCertificate();
     // ZAP: Added many instance variables for new functionality.
     private OptionsParamCheckForUpdates checkForUpdatesParam = new OptionsParamCheckForUpdates();
     private OptionsParamApi apiParam = new OptionsParamApi();
     private GlobalExcludeURLParam globalExcludeURLParam = new GlobalExcludeURLParam();
-    private OptionsParamExperimentalSliSupport experimentalFeaturesParam =
-            new OptionsParamExperimentalSliSupport();
+
+    @SuppressWarnings("deprecation")
+    private ch.csnc.extension.util.OptionsParamExperimentalSliSupport experimentalFeaturesParam =
+            new ch.csnc.extension.util.OptionsParamExperimentalSliSupport();
 
     /** The database configurations. */
     // ZAP: Added the instance variable.
@@ -98,23 +109,39 @@ public class OptionsParam extends AbstractParam {
 
     public OptionsParam() {}
 
-    /** @return Returns the connectionParam. */
-    public ConnectionParam getConnectionParam() {
+    /**
+     * @return Returns the connectionParam.
+     * @deprecated (2.12.0) Use the network add-on instead.
+     */
+    @Deprecated
+    public org.parosproxy.paros.network.ConnectionParam getConnectionParam() {
         return connectionParam;
     }
 
-    /** @return Returns the proxyParam. */
-    public ProxyParam getProxyParam() {
+    /**
+     * @deprecated (2.12.0) Use the network add-on instead.
+     * @return Returns the proxyParam.
+     */
+    @Deprecated
+    public org.parosproxy.paros.core.proxy.ProxyParam getProxyParam() {
         return proxyParam;
     }
 
-    /** @param proxyParam The proxyParam to set. */
-    public void setProxyParam(ProxyParam proxyParam) {
+    /**
+     * @deprecated (2.12.0) Use the network add-on instead.
+     * @param proxyParam The proxyParam to set.
+     */
+    @Deprecated
+    public void setProxyParam(org.parosproxy.paros.core.proxy.ProxyParam proxyParam) {
         this.proxyParam = proxyParam;
     }
 
-    /** @param connectionParam The connectionParam to set. */
-    public void setConnectionParam(ConnectionParam connectionParam) {
+    /**
+     * @param connectionParam The connectionParam to set.
+     * @deprecated (2.12.0)
+     */
+    @Deprecated
+    public void setConnectionParam(org.parosproxy.paros.network.ConnectionParam connectionParam) {
         this.connectionParam = connectionParam;
     }
 
@@ -133,13 +160,22 @@ public class OptionsParam extends AbstractParam {
         return checkForUpdatesParam;
     }
 
-    /** @param certificateParam The certificateParam to set. */
-    public void setCertificateParam(OptionsParamCertificate certificateParam) {
+    /**
+     * @param certificateParam The certificateParam to set.
+     * @deprecated (2.12.0)
+     */
+    @Deprecated
+    public void setCertificateParam(
+            org.parosproxy.paros.extension.option.OptionsParamCertificate certificateParam) {
         this.certificateParam = certificateParam;
     }
 
-    /** @return Returns the certificateParam. */
-    public OptionsParamCertificate getCertificateParam() {
+    /**
+     * @return Returns the certificateParam.
+     * @deprecated (2.12.0)
+     */
+    @Deprecated
+    public org.parosproxy.paros.extension.option.OptionsParamCertificate getCertificateParam() {
         return certificateParam;
     }
 
@@ -168,14 +204,10 @@ public class OptionsParam extends AbstractParam {
 
     @Override
     protected void parse() {
-        getConnectionParam().load(getConfig());
-        getProxyParam().load(getConfig());
-        getCertificateParam().load(getConfig());
         getViewParam().load(getConfig());
         getCheckForUpdatesParam().load(getConfig());
         getApiParam().load(getConfig());
         getGlobalExcludeURLParam().load(getConfig());
-        getExperimentalFeaturesParam().load(getConfig());
         getDatabaseParam().load(getConfig());
         getExtensionParam().load(getConfig());
 
@@ -193,7 +225,7 @@ public class OptionsParam extends AbstractParam {
                     this.userDirectory = file;
                 }
             } catch (Exception e1) {
-                logger.error(e1.getMessage(), e1);
+                LOGGER.error(e1.getMessage(), e1);
             }
         }
     }
@@ -231,7 +263,7 @@ public class OptionsParam extends AbstractParam {
         try {
             getConfig().save();
         } catch (ConfigurationException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -257,7 +289,10 @@ public class OptionsParam extends AbstractParam {
         return apiParam;
     }
 
-    public OptionsParamExperimentalSliSupport getExperimentalFeaturesParam() {
+    /** @deprecated (2.12.0) */
+    @Deprecated
+    public ch.csnc.extension.util.OptionsParamExperimentalSliSupport
+            getExperimentalFeaturesParam() {
         return experimentalFeaturesParam;
     }
 

@@ -48,6 +48,12 @@
 // ZAP: 2019/10/09 Issue 5619: Ensure -configfile maintains key order
 // ZAP: 2020/11/26 Use Log4j 2 classes for logging.
 // ZAP: 2021/05/14 Remove redundant type arguments.
+// ZAP: 2022/02/09 No longer parse host/port and deprecate related code.
+// ZAP: 2022/02/28 Remove code deprecated in 2.6.0
+// ZAP: 2022/04/11 Remove -nouseragent option.
+// ZAP: 2022/08/18 Support parameters supplied to newly installed or updated add-ons.
+// ZAP: 2023/01/10 Tidy up logger.
+// ZAP: 2023/03/23 Read ZAP_SILENT env var.
 package org.parosproxy.paros;
 
 import java.io.File;
@@ -60,16 +66,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.extension.CommandLineArgument;
 import org.parosproxy.paros.extension.CommandLineListener;
-import org.parosproxy.paros.network.HttpSender;
 import org.zaproxy.zap.ZAP;
+import org.zaproxy.zap.extension.autoupdate.ExtensionAutoUpdate;
 
 public class CommandLine {
 
-    private static final Logger logger = LogManager.getLogger(CommandLine.class);
+    private static final Logger LOGGER = LogManager.getLogger(CommandLine.class);
 
     // ZAP: Made public
     public static final String SESSION = "-session";
@@ -79,8 +86,11 @@ public class CommandLine {
     public static final String HELP2 = "-h";
     public static final String DIR = "-dir";
     public static final String VERSION = "-version";
-    public static final String PORT = "-port";
-    public static final String HOST = "-host";
+    /** @deprecated (2.12.0) No longer used/needed. It will be removed in a future release. */
+    @Deprecated public static final String PORT = "-port";
+    /** @deprecated (2.12.0) No longer used/needed. It will be removed in a future release. */
+    @Deprecated public static final String HOST = "-host";
+
     public static final String CMD = "-cmd";
     public static final String INSTALL_DIR = "-installdir";
     public static final String CONFIG = "-config";
@@ -89,6 +99,7 @@ public class CommandLine {
     public static final String EXPERIMENTALDB = "-experimentaldb";
     public static final String SUPPORT_INFO = "-suppinfo";
     public static final String SILENT = "-silent";
+    static final String SILENT_ENV_VAR = "ZAP_SILENT";
 
     /**
      * Command line option to disable the default logging through standard output.
@@ -113,8 +124,6 @@ public class CommandLine {
      */
     public static final String DEV_MODE = "-dev";
 
-    static final String NO_USER_AGENT = "-nouseragent";
-
     private boolean GUI = true;
     private boolean daemon = false;
     private boolean reportVersion = false;
@@ -122,9 +131,8 @@ public class CommandLine {
     private boolean lowMem = false;
     private boolean experimentalDb = false;
     private boolean silent = false;
-    private int port = -1;
-    private String host = null;
     private String[] args;
+    private String[] argsBackup;
     private final Map<String, String> configs = new LinkedHashMap<>();
     private final Hashtable<String, String> keywords = new Hashtable<>();
     private List<CommandLineArgument[]> commandList = null;
@@ -139,8 +147,16 @@ public class CommandLine {
     private boolean devMode;
 
     public CommandLine(String[] args) throws Exception {
+        this(args, System::getenv);
+    }
+
+    CommandLine(String[] args, UnaryOperator<String> env) throws Exception {
         this.args = args == null ? new String[0] : args;
+        this.argsBackup = new String[this.args.length];
+        System.arraycopy(this.args, 0, argsBackup, 0, this.args.length);
+
         parseFirst(this.args);
+        readEnv(env);
 
         if (isEnabled(CommandLine.CMD) && isEnabled(CommandLine.DAEMON)) {
             throw new IllegalArgumentException(
@@ -150,6 +166,17 @@ public class CommandLine {
                             + CommandLine.DAEMON
                             + " cannot be used at the same time.");
         }
+    }
+
+    private void readEnv(UnaryOperator<String> env) {
+        if (env.apply(SILENT_ENV_VAR) != null) {
+            setSilent();
+        }
+    }
+
+    private void setSilent() {
+        silent = true;
+        Constant.setSilent(true);
     }
 
     private boolean checkPair(String[] args, String paramName, int i) throws Exception {
@@ -203,10 +230,28 @@ public class CommandLine {
     public void parse(
             List<CommandLineArgument[]> commandList, Map<String, CommandLineListener> extMap)
             throws Exception {
+        this.parse(commandList, extMap, true);
+    }
+
+    /**
+     * Parse the command line arguments
+     *
+     * @param commandList the list of commands
+     * @param extMap a map of the extensions which support command line args
+     * @param reportUnsupported if true will report unsupported args
+     * @throws Exception
+     * @since 2.12.0
+     */
+    public void parse(
+            List<CommandLineArgument[]> commandList,
+            Map<String, CommandLineListener> extMap,
+            boolean reportUnsupported)
+            throws Exception {
         this.commandList = commandList;
         CommandLineArgument lastArg = null;
         boolean found = false;
         int remainingValueCount = 0;
+        boolean installingAddons = false;
 
         for (int i = 0; i < args.length; i++) {
             if (args[i] == null) {
@@ -230,6 +275,12 @@ public class CommandLine {
                         lastArg = extArg[k];
                         lastArg.setEnabled(true);
                         found = true;
+
+                        if (ExtensionAutoUpdate.ADDON_INSTALL.equals(args[i])
+                                || ExtensionAutoUpdate.ADDON_INSTALL_ALL.equals(args[i])) {
+                            installingAddons = true;
+                        }
+
                         args[i] = null;
                         remainingValueCount = lastArg.getNumOfArguments();
                     }
@@ -291,27 +342,30 @@ public class CommandLine {
             }
         }
 
-        // check if there is some unknown keywords or parameters
-        for (String arg : args) {
-            if (arg != null) {
-                if (arg.startsWith("-")) {
-                    throw new Exception(Constant.messages.getString("start.cmdline.badparam", arg));
-
-                } else {
-                    // Assume they were trying to specify a file
-                    File f = new File(arg);
-                    if (!f.exists()) {
+        if (reportUnsupported && !installingAddons) {
+            // check if there is some unknown keywords or parameters
+            for (String arg : args) {
+                if (arg != null) {
+                    if (arg.startsWith("-")) {
                         throw new Exception(
-                                Constant.messages.getString("start.cmdline.nofile", arg));
-
-                    } else if (!f.canRead()) {
-                        throw new Exception(
-                                Constant.messages.getString("start.cmdline.noread", arg));
+                                Constant.messages.getString("start.cmdline.badparam", arg));
 
                     } else {
-                        // We probably dont handle this sort of file
-                        throw new Exception(
-                                Constant.messages.getString("start.cmdline.badfile", arg));
+                        // Assume they were trying to specify a file
+                        File f = new File(arg);
+                        if (!f.exists()) {
+                            throw new Exception(
+                                    Constant.messages.getString("start.cmdline.nofile", arg));
+
+                        } else if (!f.canRead()) {
+                            throw new Exception(
+                                    Constant.messages.getString("start.cmdline.noread", arg));
+
+                        } else {
+                            // We probably dont handle this sort of file
+                            throw new Exception(
+                                    Constant.messages.getString("start.cmdline.badfile", arg));
+                        }
                     }
                 }
             }
@@ -322,12 +376,7 @@ public class CommandLine {
 
         boolean result = false;
 
-        if (checkSwitch(args, NO_USER_AGENT, i)) {
-            HttpSender.setUserAgent("");
-            Constant.setEyeCatcher("");
-            result = true;
-
-        } else if (checkSwitch(args, CMD, i)) {
+        if (checkSwitch(args, CMD, i)) {
             setDaemon(false);
             setGUI(false);
 
@@ -363,8 +412,7 @@ public class CommandLine {
             devMode = true;
             Constant.setDevMode(true);
         } else if (checkSwitch(args, SILENT, i)) {
-            silent = true;
-            Constant.setSilent(true);
+            setSilent();
         }
 
         return result;
@@ -384,14 +432,6 @@ public class CommandLine {
 
         } else if (checkPair(args, INSTALL_DIR, i)) {
             Constant.setZapInstall(keywords.get(INSTALL_DIR));
-            result = true;
-
-        } else if (checkPair(args, HOST, i)) {
-            this.host = keywords.get(HOST);
-            result = true;
-
-        } else if (checkPair(args, PORT, i)) {
-            this.port = Integer.parseInt(keywords.get(PORT));
             result = true;
 
         } else if (checkPair(args, CONFIG, i)) {
@@ -494,24 +534,16 @@ public class CommandLine {
         return this.displaySupportInfo;
     }
 
-    public int getPort() {
-        return this.port;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    /**
-     * Gets the {@code config} command line arguments, in no specific order.
-     *
-     * @return the {@code config} command line arguments.
-     * @deprecated (2.6.0) Use {@link #getOrderedConfigs()} instead, which are in the order they
-     *     were specified.
-     */
+    /** @deprecated (2.12.0) No longer used/needed. It will be removed in a future release. */
     @Deprecated
-    public Hashtable<String, String> getConfigs() {
-        return new Hashtable<>(configs);
+    public int getPort() {
+        return -1;
+    }
+
+    /** @deprecated (2.12.0) No longer used/needed. It will be removed in a future release. */
+    @Deprecated
+    public String getHost() {
+        return null;
     }
 
     /**
@@ -591,6 +623,15 @@ public class CommandLine {
     }
 
     /**
+     * Reset the arguments so that they can be parsed again (e.g. after an add-on is installed)
+     *
+     * @since 2.12.0
+     */
+    public void resetArgs() {
+        System.arraycopy(argsBackup, 0, args, 0, argsBackup.length);
+    }
+
+    /**
      * A method for reporting informational messages in {@link
      * CommandLineListener#execute(CommandLineArgument[])} implementations. It ensures that messages
      * are written to the log file and/or written to stdout as appropriate.
@@ -605,7 +646,7 @@ public class CommandLine {
             default: // Ignore
         }
         // Always write to the log
-        logger.info(str);
+        LOGGER.info(str);
     }
 
     /**
@@ -623,7 +664,7 @@ public class CommandLine {
             default: // Ignore
         }
         // Always write to the log
-        logger.error(str);
+        LOGGER.error(str);
     }
 
     /**
@@ -642,6 +683,6 @@ public class CommandLine {
             default: // Ignore
         }
         // Always write to the log
-        logger.error(str, e);
+        LOGGER.error(str, e);
     }
 }

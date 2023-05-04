@@ -39,6 +39,9 @@
 // ZAP: 2019/06/05 Normalise format/style.
 // ZAP: 2020/11/02 Add OneTouchExapandable control to Sites Tree/Request&Response panels
 // ZAP: 2020/11/26 Use Log4j 2 classes for logging.
+// ZAP: 2022/02/26 Remove deprecated methods in 2.5.0
+// ZAP: 2022/09/21 Use format specifiers instead of concatenation when logging.
+// ZAP: 2023/01/10 Tidy up logger.
 package org.parosproxy.paros.view;
 
 import java.awt.BorderLayout;
@@ -64,7 +67,6 @@ import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.extension.AbstractPanel;
 import org.parosproxy.paros.extension.option.OptionsParamView;
-import org.parosproxy.paros.model.Model;
 import org.zaproxy.zap.utils.DisplayUtils;
 import org.zaproxy.zap.view.ComponentMaximiser;
 import org.zaproxy.zap.view.ComponentMaximiserMouseListener;
@@ -75,6 +77,7 @@ import org.zaproxy.zap.view.TabbedPanel2;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("serial")
 public class WorkbenchPanel extends JPanel {
 
     /**
@@ -227,7 +230,7 @@ public class WorkbenchPanel extends JPanel {
 
     private static final long serialVersionUID = -4610792807151921550L;
 
-    private static final Logger logger = LogManager.getLogger(WorkbenchPanel.class);
+    private static final Logger LOGGER = LogManager.getLogger(WorkbenchPanel.class);
 
     private static final String PREF_DIVIDER_LOCATION = "divider.location";
     private static final String DIVIDER_VERTICAL = "vertical";
@@ -394,20 +397,6 @@ public class WorkbenchPanel extends JPanel {
     private boolean showTabNames;
 
     /**
-     * @deprecated (2.5.0) Use {@link WorkbenchPanel#WorkbenchPanel(OptionsParamView, AbstractPanel,
-     *     AbstractPanel)} instead.
-     */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public WorkbenchPanel(int displayOption) {
-        this(
-                Model.getSingleton().getOptionsParam().getViewParam(),
-                View.getSingleton().getRequestPanel(),
-                View.getSingleton().getResponsePanel());
-        changeDisplayOption(displayOption);
-    }
-
-    /**
      * Constructs a {@code WorkbenchPanel} with the given options and request and response panels.
      *
      * @param viewOptions the options
@@ -465,13 +454,6 @@ public class WorkbenchPanel extends JPanel {
         if (parameter == null) {
             throw new IllegalArgumentException("Parameter " + parameterName + " must not be null");
         }
-    }
-
-    /** @deprecated (2.5.0) Use {@link #setWorkbenchLayout(Layout)} instead. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public void changeDisplayOption(int option) {
-        setWorkbenchLayout(Layout.getLayout(option));
     }
 
     /**
@@ -706,15 +688,6 @@ public class WorkbenchPanel extends JPanel {
         return tabbedFull;
     }
 
-    /** @deprecated (2.5.0) No longer in use, it does nothing. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public void splitPaneWorkWithTabbedPanel(TabbedPanel tabbedPanel, int orientation) {}
-
-    /** @deprecated (2.5.0) No longer in use, it does nothing. */
-    @Deprecated
-    public void removeSplitPaneWork() {}
-
     /**
      * Gets the tabbed panel that has the {@link PanelType#STATUS STATUS} panels.
      *
@@ -736,13 +709,6 @@ public class WorkbenchPanel extends JPanel {
         return tabbedStatus;
     }
 
-    /** @deprecated (2.5.0) No longer in use, it returns a new {@code TabbedPanel2}. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public TabbedPanel2 getTabbedOldStatus() {
-        return new TabbedPanel2();
-    }
-
     /**
      * Gets the tabbed panel that has the {@link PanelType#WORK WORK} panels.
      *
@@ -761,26 +727,6 @@ public class WorkbenchPanel extends JPanel {
         }
         return tabbedWork;
     }
-
-    /** @deprecated (2.5.0) No longer in use, it returns a new {@code TabbedPanel2}. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public TabbedPanel2 getTabbedOldWork() {
-        return new TabbedPanel2();
-    }
-
-    /** @deprecated (2.5.0) No longer in use, it does nothing. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public void setTabbedOldWork(TabbedPanel2 t) {}
-    /** @deprecated (2.5.0) No longer in use, it does nothing. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public void setTabbedOldStatus(TabbedPanel2 t) {}
-    /** @deprecated (2.5.0) No longer in use, it does nothing. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public void setTabbedOldSelect(TabbedPanel2 t) {}
 
     /**
      * Sets whether or not the tabs should display the name of the panels.
@@ -826,13 +772,6 @@ public class WorkbenchPanel extends JPanel {
         }
 
         return tabbedSelect;
-    }
-
-    /** @deprecated (2.5.0) No longer in use, it returns a new {@code TabbedPanel2}. */
-    @Deprecated
-    @SuppressWarnings("javadoc")
-    public TabbedPanel2 getTabbedOldSelect() {
-        return new TabbedPanel2();
     }
 
     /**
@@ -1348,15 +1287,12 @@ public class WorkbenchPanel extends JPanel {
      */
     private void saveDividerLocation(String prefix, int location) {
         if (location > 0) {
-            if (logger.isDebugEnabled())
-                logger.debug(
-                        "Saving preference "
-                                + prefnzPrefix
-                                + prefix
-                                + "."
-                                + PREF_DIVIDER_LOCATION
-                                + "="
-                                + location);
+            LOGGER.debug(
+                    "Saving preference {}{}.{}={}",
+                    prefnzPrefix,
+                    prefix,
+                    PREF_DIVIDER_LOCATION,
+                    location);
             this.preferences.put(
                     prefnzPrefix + prefix + "." + PREF_DIVIDER_LOCATION,
                     Integer.toString(location));
@@ -1364,7 +1300,7 @@ public class WorkbenchPanel extends JPanel {
             try {
                 this.preferences.flush();
             } catch (final BackingStoreException e) {
-                logger.error("Error while saving the preferences", e);
+                LOGGER.error("Error while saving the preferences", e);
             }
         }
     }
@@ -1387,15 +1323,12 @@ public class WorkbenchPanel extends JPanel {
             }
             if (location > 0) {
                 result = location;
-                if (logger.isDebugEnabled())
-                    logger.debug(
-                            "Restoring preference "
-                                    + prefnzPrefix
-                                    + prefix
-                                    + "."
-                                    + PREF_DIVIDER_LOCATION
-                                    + "="
-                                    + location);
+                LOGGER.debug(
+                        "Restoring preference {}{}.{}={}",
+                        prefnzPrefix,
+                        prefix,
+                        PREF_DIVIDER_LOCATION,
+                        location);
             }
         }
         return result;
@@ -1419,14 +1352,8 @@ public class WorkbenchPanel extends JPanel {
         public void propertyChange(PropertyChangeEvent evt) {
             JSplitPane component = (JSplitPane) evt.getSource();
             if (component != null) {
-                if (logger.isDebugEnabled())
-                    logger.debug(
-                            prefnzPrefix
-                                    + prefix
-                                    + "."
-                                    + "location"
-                                    + "="
-                                    + component.getDividerLocation());
+                LOGGER.debug(
+                        "{}{}.location={}", prefnzPrefix, prefix, component.getDividerLocation());
                 saveDividerLocation(prefix, component.getDividerLocation());
             }
         }

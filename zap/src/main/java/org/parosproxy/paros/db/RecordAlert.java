@@ -27,6 +27,8 @@
 // ZAP: 2019/06/05 Normalise format/style.
 // ZAP: 2019/10/10 Remove old alert update that split the param/attack.
 // ZAP: 2020/11/03 Add alertRef field.
+// ZAP: 2021/04/30 Add input vector to Alert
+// ZAP: 2022/02/03 Removed deprecated getReliability() and setReliability()
 package org.parosproxy.paros.db;
 
 public class RecordAlert {
@@ -46,6 +48,7 @@ public class RecordAlert {
     private String reference = "";
     private int historyId = 0;
     private String evidence = "";
+    private String inputVector;
     private int cweId = -1;
     private int wascId = -1;
     // ZAP: Added sourceHistoryId to RecordAlert - this is the original record that 'caused' the
@@ -76,7 +79,8 @@ public class RecordAlert {
             int historyId,
             int sourceHistoryId,
             int sourceId,
-            String alertRef) {
+            String alertRef,
+            String inputVector) {
         setAlertId(alertId);
         setScanId(scanId);
         setPluginId(pluginId);
@@ -93,6 +97,7 @@ public class RecordAlert {
         setHistoryId(historyId);
         setSourceHistoryId(sourceHistoryId);
         setEvidence(evidence);
+        setInputVector(inputVector);
         setCweId(cweId);
         setWascId(wascId);
         setSourceId(sourceId);
@@ -154,22 +159,6 @@ public class RecordAlert {
     /** @param reference The reference to set. */
     public void setReference(String reference) {
         this.reference = reference;
-    }
-    /**
-     * @deprecated (2.4.0) Replaced by {@link #getConfidence()}.
-     * @return the reliability.
-     */
-    @Deprecated
-    public int getReliability() {
-        return confidence;
-    }
-    /**
-     * @deprecated (2.4.0) Replaced by {@link #setConfidence(int)}.
-     * @param confidence The reliability to set.
-     */
-    @Deprecated
-    public void setReliability(int confidence) {
-        this.confidence = confidence;
     }
     /** @return the confidence. */
     public int getConfidence() {
@@ -242,6 +231,14 @@ public class RecordAlert {
 
     public void setEvidence(String evidence) {
         this.evidence = evidence;
+    }
+
+    public String getInputVector() {
+        return inputVector;
+    }
+
+    public void setInputVector(String inputVector) {
+        this.inputVector = inputVector;
     }
 
     public int getCweId() {

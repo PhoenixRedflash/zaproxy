@@ -82,14 +82,7 @@ val createPullRequestMainRelease by tasks.registering(CreatePullRequest::class) 
     commitDescription.set("Remove `-SNAPSHOT` from the version.")
 
     pullRequestTitle.set("Release version ${project.version}")
-    pullRequestDescription.set("""
-    Pending tasks, update:
-      - [ ] `Constant#VERSION_TAG`
-      - [ ] CFU links (`ExtensionAutoUpdate#ZAP_VERSIONS_REL_XML_DESKTOP_SHORT`, `ZAP_VERSIONS_REL_XML_DAEMON_SHORT`, and `ZAP_VERSIONS_REL_XML_FULL`)
-      - [ ] Add-ons
-      - [ ] macOS JRE
-      - [ ] JavaDoc link in `README`
-    """.trimIndent())
+    pullRequestDescription.set("")
 }
 
 tasks.register<CreateMainRelease>("createMainRelease") {
@@ -101,7 +94,7 @@ tasks.register<CreateMainRelease>("createMainRelease") {
     tagMessage.set("Version ${project.version}")
 
     title.set(tagName)
-    body.set("")
+    body.set("Release notes: https://www.zaproxy.org/docs/desktop/releases/${project.version}/")
     checksumAlgorithm.set("SHA-256")
     draft.set(true)
 
