@@ -1571,21 +1571,18 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
         incTabOffset(tabIndex);
     }
 
-    public void addFileSelectField(
-            String fieldLabel, final File dir, final int mode, final FileFilter filter) {
-        validateNotTabbed();
-        final ZapTextField text = new ZapTextField();
-        text.setEditable(false);
-        if (dir != null) {
-            text.setText(dir.getAbsolutePath());
-        }
-        final StandardFieldsDialog sfd = this;
+    private static JButton createFileChooserButton(
+            StandardFieldsDialog sfd, ZapTextField field, int mode, FileFilter filter) {
         JButton selectButton = new JButton("...");
         selectButton.addActionListener(
                 new java.awt.event.ActionListener() {
                     @Override
                     public void actionPerformed(java.awt.event.ActionEvent e) {
-                        JFileChooser chooser = new JFileChooser(dir);
+                        File f = new File(field.getText());
+                        if (!f.exists()) {
+                            f = f.getParentFile();
+                        }
+                        JFileChooser chooser = new JFileChooser(f);
                         chooser.setFileSelectionMode(mode);
                         if (filter != null) {
                             chooser.setFileFilter(filter);
@@ -1597,10 +1594,20 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
                             if (file == null) {
                                 return;
                             }
-                            text.setText(file.getAbsolutePath());
+                            field.setText(file.getAbsolutePath());
                         }
                     }
                 });
+        return selectButton;
+    }
+
+    public void addFileSelectField(
+            String fieldLabel, final File dir, final int mode, final FileFilter filter) {
+        validateNotTabbed();
+        final ZapTextField text = new ZapTextField();
+        if (dir != null) {
+            text.setText(dir.getAbsolutePath());
+        }
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
         panel.add(
@@ -1608,7 +1615,7 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
                 LayoutHelper.getGBC(
                         0, 0, 1, 1.0D, 0.0D, GridBagConstraints.BOTH, new Insets(4, 4, 4, 4)));
         panel.add(
-                selectButton,
+                createFileChooserButton(this, text, mode, filter),
                 LayoutHelper.getGBC(
                         1, 0, 1, 0.0D, 0.0D, GridBagConstraints.BOTH, new Insets(4, 4, 4, 4)));
 
@@ -1623,32 +1630,9 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
             final FileFilter filter) {
         validateTabbed(tabIndex);
         final ZapTextField text = new ZapTextField();
-        text.setEditable(false);
         if (dir != null) {
             text.setText(dir.getAbsolutePath());
         }
-        final StandardFieldsDialog sfd = this;
-        JButton selectButton = new JButton("...");
-        selectButton.addActionListener(
-                new java.awt.event.ActionListener() {
-                    @Override
-                    public void actionPerformed(java.awt.event.ActionEvent e) {
-                        JFileChooser chooser = new JFileChooser(dir);
-                        chooser.setFileSelectionMode(mode);
-                        if (filter != null) {
-                            chooser.setFileFilter(filter);
-                        }
-
-                        int rc = chooser.showSaveDialog(sfd);
-                        if (rc == JFileChooser.APPROVE_OPTION) {
-                            File file = chooser.getSelectedFile();
-                            if (file == null) {
-                                return;
-                            }
-                            text.setText(file.getAbsolutePath());
-                        }
-                    }
-                });
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
         panel.add(
@@ -1656,7 +1640,7 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
                 LayoutHelper.getGBC(
                         0, 0, 1, 1.0D, 0.0D, GridBagConstraints.BOTH, new Insets(4, 4, 4, 4)));
         panel.add(
-                selectButton,
+                createFileChooserButton(this, text, mode, filter),
                 LayoutHelper.getGBC(
                         1, 0, 1, 0.0D, 0.0D, GridBagConstraints.BOTH, new Insets(4, 4, 4, 4)));
 
@@ -1748,8 +1732,28 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
      * @see #addCustomComponent(Component)
      * @see #addCustomComponent(int, Component)
      * @see #addCustomComponent(String, Component)
+     * @see #addCustomComponent(int, String, Component, double)
      */
     public void addCustomComponent(int tabIndex, String componentLabel, Component component) {
+        addCustomComponent(tabIndex, componentLabel, component, 0.0D);
+    }
+
+    /**
+     * Add a custom {@code Component} to a tabbed {@code StandardFieldsDialog} with the given label.
+     *
+     * @param tabIndex tabIndex the index of the tab to which the {@code Component} need to be
+     *     added.
+     * @param componentLabel the {@code I18N} key for the component label, should not be null.
+     * @param component the {@code Component} to be added.
+     * @param weighty the vertical weight for the component, see {@link GridBagConstraints#weighty}.
+     * @since 2.15.0
+     * @see #addCustomComponent(Component)
+     * @see #addCustomComponent(int, Component)
+     * @see #addCustomComponent(String, Component)
+     * @see #addCustomComponent(int, String, Component)
+     */
+    public void addCustomComponent(
+            int tabIndex, String componentLabel, Component component, double weighty) {
         validateTabbed(tabIndex);
         this.addField(
                 this.tabPanels.get(tabIndex),
@@ -1757,7 +1761,7 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
                 componentLabel,
                 component,
                 component,
-                0.0D);
+                weighty);
         this.incTabOffset(tabIndex);
     }
 
@@ -1768,12 +1772,29 @@ public abstract class StandardFieldsDialog extends AbstractDialog {
      * @param component the {@code Component} to be added
      * @since 2.8.0
      * @see #addCustomComponent(Component)
+     * @see #addCustomComponent(String, Component, double)
      * @see #addCustomComponent(int, Component)
      * @see #addCustomComponent(int, String, Component)
      */
     public void addCustomComponent(String componentLabel, Component component) {
+        addCustomComponent(componentLabel, component, 0.0D);
+    }
+
+    /**
+     * Add a custom {@code Component} to {@code StandardFieldsDialog} with the given label.
+     *
+     * @param componentLabel the {@code I18N} key for the component label, should not be null
+     * @param component the {@code Component} to be added
+     * @param weighty the vertical weight for the component, see {@link GridBagConstraints#weighty}.
+     * @since 2.15.0
+     * @see #addCustomComponent(Component)
+     * @see #addCustomComponent(String, Component)
+     * @see #addCustomComponent(int, Component)
+     * @see #addCustomComponent(int, String, Component)
+     */
+    public void addCustomComponent(String componentLabel, Component component, double weighty) {
         validateNotTabbed();
-        this.addField(componentLabel, component, component, 0.0D);
+        this.addField(componentLabel, component, component, weighty);
     }
 
     /**

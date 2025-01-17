@@ -95,6 +95,8 @@
 // ZAP: 2022/09/21 Use format specifiers instead of concatenation when logging.
 // ZAP: 2022/09/27 Added dialog methods with ZapHtmlLabel parameter.
 // ZAP: 2023/01/10 Tidy up logger.
+// ZAP: 2024/08/20 Wrap string dialog messages in ZapLabel so that they can be copied.
+// ZAP: 2024/12/30 Support swapping the output panel implementation.
 package org.parosproxy.paros.view;
 
 import java.awt.Component;
@@ -143,6 +145,7 @@ import org.zaproxy.zap.extension.keyboard.ExtensionKeyboard;
 import org.zaproxy.zap.model.Context;
 import org.zaproxy.zap.utils.DisplayUtils;
 import org.zaproxy.zap.utils.ZapHtmlLabel;
+import org.zaproxy.zap.utils.ZapLabel;
 import org.zaproxy.zap.view.AbstractContextPropertiesPanel;
 import org.zaproxy.zap.view.ContextExcludePanel;
 import org.zaproxy.zap.view.ContextGeneralPanel;
@@ -179,7 +182,7 @@ public class View implements ViewDelegate {
     private HttpPanelRequest requestPanel = null;
     private HttpPanelResponse responsePanel = null;
     private SiteMapPanel siteMapPanel = null;
-    private OutputPanel outputPanel = null;
+    private OutputPanel outputPanel;
     private Vector<JMenuItem> popupList = new Vector<>();
 
     private JMenu menuShowTabs = null;
@@ -189,6 +192,7 @@ public class View implements ViewDelegate {
 
     private List<AbstractContextPropertiesPanel> contextPanels = new ArrayList<>();
     private List<ContextPanelFactory> contextPanelFactories = new ArrayList<>();
+
     /**
      * A map containing the {@link AbstractContextPropertiesPanel context panels} created by a
      * {@link ContextPanelFactory context panel factory}, being the latter the key and the former
@@ -220,11 +224,14 @@ public class View implements ViewDelegate {
      */
     private boolean canGetFocus = true;
 
-    /** @return Returns the mainFrame. */
+    /**
+     * @return Returns the mainFrame.
+     */
     @Override
     public MainFrame getMainFrame() {
         return mainFrame;
     }
+
     /// **
     // * @return Returns the requestPanel.
     // */
@@ -270,7 +277,7 @@ public class View implements ViewDelegate {
     }
 
     public void postInit() {
-        mainFrame.getWorkbench().addPanel(getOutputPanel(), WorkbenchPanel.PanelType.STATUS);
+        setOutputPanel(getOutputPanel());
 
         refreshTabViewMenus();
 
@@ -437,7 +444,9 @@ public class View implements ViewDelegate {
         return showConfirmDialog(getMainFrame(), msg);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public int showConfirmDialog(ZapHtmlLabel label) {
         return showConfirmDialog(getMainFrame(), label);
     }
@@ -447,7 +456,9 @@ public class View implements ViewDelegate {
                 parent, msg, Constant.PROGRAM_NAME, JOptionPane.OK_CANCEL_OPTION);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public int showConfirmDialog(JPanel parent, ZapHtmlLabel label) {
         return JOptionPane.showConfirmDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.OK_CANCEL_OPTION);
@@ -458,7 +469,9 @@ public class View implements ViewDelegate {
                 parent, msg, Constant.PROGRAM_NAME, JOptionPane.OK_CANCEL_OPTION);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public int showConfirmDialog(Window parent, ZapHtmlLabel label) {
         return JOptionPane.showConfirmDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.OK_CANCEL_OPTION);
@@ -469,7 +482,9 @@ public class View implements ViewDelegate {
         return showYesNoCancelDialog(getMainFrame(), msg);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public int showYesNoCancelDialog(ZapHtmlLabel label) {
         return showYesNoCancelDialog(getMainFrame(), label);
     }
@@ -479,7 +494,9 @@ public class View implements ViewDelegate {
                 parent, msg, Constant.PROGRAM_NAME, JOptionPane.YES_NO_CANCEL_OPTION);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public int showYesNoCancelDialog(JPanel parent, ZapHtmlLabel label) {
         return JOptionPane.showConfirmDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.YES_NO_CANCEL_OPTION);
@@ -490,7 +507,9 @@ public class View implements ViewDelegate {
                 parent, msg, Constant.PROGRAM_NAME, JOptionPane.YES_NO_CANCEL_OPTION);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public int showYesNoCancelDialog(Window parent, ZapHtmlLabel label) {
         return JOptionPane.showConfirmDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.YES_NO_CANCEL_OPTION);
@@ -501,17 +520,21 @@ public class View implements ViewDelegate {
         showWarningDialog(getMainFrame(), msg);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public void showWarningDialog(ZapHtmlLabel label) {
         showWarningDialog(getMainFrame(), label);
     }
 
     public void showWarningDialog(JPanel parent, String msg) {
         JOptionPane.showMessageDialog(
-                parent, msg, Constant.PROGRAM_NAME, JOptionPane.WARNING_MESSAGE);
+                parent, new ZapLabel(msg), Constant.PROGRAM_NAME, JOptionPane.WARNING_MESSAGE);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public void showWarningDialog(JPanel parent, ZapHtmlLabel label) {
         JOptionPane.showMessageDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.WARNING_MESSAGE);
@@ -519,10 +542,12 @@ public class View implements ViewDelegate {
 
     public void showWarningDialog(Window parent, String msg) {
         JOptionPane.showMessageDialog(
-                parent, msg, Constant.PROGRAM_NAME, JOptionPane.WARNING_MESSAGE);
+                parent, new ZapLabel(msg), Constant.PROGRAM_NAME, JOptionPane.WARNING_MESSAGE);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public void showWarningDialog(Window parent, ZapHtmlLabel label) {
         JOptionPane.showMessageDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.WARNING_MESSAGE);
@@ -533,17 +558,21 @@ public class View implements ViewDelegate {
         showMessageDialog(getMainFrame(), msg);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public void showMessageDialog(ZapHtmlLabel label) {
         showMessageDialog(getMainFrame(), label);
     }
 
     public void showMessageDialog(JPanel parent, String msg) {
         JOptionPane.showMessageDialog(
-                parent, msg, Constant.PROGRAM_NAME, JOptionPane.INFORMATION_MESSAGE);
+                parent, new ZapLabel(msg), Constant.PROGRAM_NAME, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public void showMessageDialog(JPanel parent, ZapHtmlLabel label) {
         JOptionPane.showMessageDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.INFORMATION_MESSAGE);
@@ -551,10 +580,12 @@ public class View implements ViewDelegate {
 
     public void showMessageDialog(Window parent, String msg) {
         JOptionPane.showMessageDialog(
-                parent, msg, Constant.PROGRAM_NAME, JOptionPane.INFORMATION_MESSAGE);
+                parent, new ZapLabel(msg), Constant.PROGRAM_NAME, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /** @since 2.12.0 */
+    /**
+     * @since 2.12.0
+     */
     public void showMessageDialog(Window parent, ZapHtmlLabel label) {
         JOptionPane.showMessageDialog(
                 parent, label, Constant.PROGRAM_NAME, JOptionPane.INFORMATION_MESSAGE);
@@ -654,7 +685,9 @@ public class View implements ViewDelegate {
     //
     //	    findDialog.setVisible(true);
     //	}
-    /** @return Returns the siteTreePanel. */
+    /**
+     * @return Returns the siteTreePanel.
+     */
     @Override
     public SiteMapPanel getSiteTreePanel() {
         if (siteMapPanel == null) {
@@ -670,6 +703,22 @@ public class View implements ViewDelegate {
             ExtensionHelp.enableHelpKey(outputPanel, "ui.tabs.output");
         }
         return outputPanel;
+    }
+
+    /**
+     * Sets the output panel implementation, replacing the existing output panel in the UI with the
+     * new one. If {@code outputPanel} is {@code null}, the existing output panel is replaced with
+     * the default implementation.
+     *
+     * @since 2.16.0
+     */
+    @Override
+    public void setOutputPanel(OutputPanel outputPanel) {
+        if (this.outputPanel != null) {
+            mainFrame.getWorkbench().removePanel(this.outputPanel, WorkbenchPanel.PanelType.STATUS);
+        }
+        this.outputPanel = outputPanel;
+        mainFrame.getWorkbench().addPanel(getOutputPanel(), WorkbenchPanel.PanelType.STATUS);
     }
 
     @Override

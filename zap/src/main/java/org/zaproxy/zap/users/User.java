@@ -313,7 +313,11 @@ public class User extends Enableable {
         out.append(Base64.encodeBase64String(user.name.getBytes())).append(FIELD_SEPARATOR);
         out.append(user.getContext().getAuthenticationMethod().getType().getUniqueIdentifier())
                 .append(FIELD_SEPARATOR);
-        out.append(user.authenticationCredentials.encode(FIELD_SEPARATOR));
+        if (user.authenticationCredentials != null) {
+            out.append(user.authenticationCredentials.encode(FIELD_SEPARATOR));
+        } else {
+            out.append(FIELD_SEPARATOR);
+        }
         LOGGER.debug("Encoded user: {}", out);
         return out.toString();
     }
@@ -359,7 +363,7 @@ public class User extends Enableable {
             cred.decode(pieces[4]);
             user.setAuthenticationCredentials(cred);
         } catch (Exception ex) {
-            LOGGER.error("An error occured while decoding user from: {}", encodedString, ex);
+            LOGGER.error("An error occurred while decoding user from: {}", encodedString, ex);
             return null;
         }
         LOGGER.debug("Decoded user: {}", user);

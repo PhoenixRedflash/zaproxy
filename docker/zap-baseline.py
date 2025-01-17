@@ -20,7 +20,7 @@
 # This script runs a baseline scan against a target URL using ZAP
 #
 # It can either be run 'standalone', in which case depends on
-# https://pypi.python.org/pypi/python-owasp-zap-v2.4 and Docker, or it can be run
+# https://pypi.python.org/pypi/zaproxy and Docker, or it can be run
 # inside one of the ZAP docker containers. It automatically detects if it is
 # running in docker so the parameters are the same.
 #
@@ -285,6 +285,10 @@ def main(argv):
         usage()
         sys.exit(3)
 
+    if "-silent" in zap_options and zap_alpha:
+        logging.warning('You cannot use the \'-a\' option with the ZAP \'-silent\' option')
+        sys.exit(3)
+
     if running_in_docker():
         base_dir = '/zap/wrk/'
         if config_file or generate or report_html or report_xml or report_json or report_md or progress_file or context_file:
@@ -402,13 +406,13 @@ def main(argv):
                         logging.warning('Unable to copy yaml file to ' + yaml_copy_file + ' ' + str(err))
 
             try:
-                # Run ZAP inline to update the add-ons
-                install_opts = ['-addonupdate', '-addoninstall', 'pscanrulesBeta']
-                if zap_alpha:
-                    install_opts.append('-addoninstall')
-                    install_opts.append('pscanrulesAlpha')
+                if "-silent" not in zap_options:
+                    # Run ZAP inline to update the add-ons
+                    install_opts = ['-addonupdate', '-addoninstall', 'pscanrulesBeta']
+                    if zap_alpha:
+                        install_opts.extend(['-addoninstall', 'pscanrulesAlpha'])
 
-                run_zap_inline(port, install_opts)
+                    run_zap_inline(port, install_opts)
 
                 # Run ZAP inline with the yaml file
                 params = ['-autorun', yaml_file]
@@ -453,14 +457,15 @@ def main(argv):
 
         else:
             try:
-                params = [
-                          '-config', 'spider.maxDuration=' + str(mins),
-                          '-addonupdate',
-                          '-addoninstall', 'pscanrulesBeta']  # In case we're running in the stable container
+                params = ['-config', 'spider.maxDuration=' + str(mins)]
 
-                if zap_alpha:
-                    params.append('-addoninstall')
-                    params.append('pscanrulesAlpha')
+                if "-silent" not in zap_options:
+                    params.append('-addonupdate')
+                    # In case we're running in the stable container
+                    params.extend(['-addoninstall', 'pscanrulesBeta'])
+
+                    if zap_alpha:
+                        params.extend(['-addoninstall', 'pscanrulesAlpha'])
 
                 add_zap_options(params, zap_options)
 
@@ -476,17 +481,19 @@ def main(argv):
         if context_file:
             mount_dir = os.path.dirname(os.path.abspath(context_file))
 
-        params = [
-                '-config', 'spider.maxDuration=' + str(mins),
-                '-addonupdate']
 
-        if (zap_alpha):
-            params.extend(['-addoninstall', 'pscanrulesAlpha'])
+        params = ['-config', 'spider.maxDuration=' + str(mins)]
+
+        if "-silent" not in zap_options:
+            params.append('-addonupdate')
+
+            if (zap_alpha):
+                params.extend(['-addoninstall', 'pscanrulesAlpha'])
 
         add_zap_options(params, zap_options)
 
         try:
-            cid = start_docker_zap('owasp/zap2docker-weekly', port, params, mount_dir)
+            cid = start_docker_zap('ghcr.io/zaproxy/zaproxy:weekly', port, params, mount_dir)
             zap_ip = ipaddress_for_cid(cid)
             logging.debug('Docker ZAP IP Addr: ' + zap_ip)
         except OSError:

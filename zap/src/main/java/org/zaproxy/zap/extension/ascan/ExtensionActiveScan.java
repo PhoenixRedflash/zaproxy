@@ -59,6 +59,7 @@ import org.zaproxy.zap.model.StructuralNode;
 import org.zaproxy.zap.model.StructuralSiteNode;
 import org.zaproxy.zap.model.Target;
 import org.zaproxy.zap.users.User;
+import org.zaproxy.zap.utils.Stats;
 import org.zaproxy.zap.view.ZapMenuItem;
 
 public class ExtensionActiveScan extends ExtensionAdaptor
@@ -189,6 +190,10 @@ public class ExtensionActiveScan extends ExtensionAdaptor
         this.activeScanApi = new ActiveScanAPI(this);
         this.activeScanApi.addApiOptions(getScannerParam());
         extensionHook.addApiImplementor(activeScanApi);
+
+        String deprecationDesc = Constant.messages.getString("ascan.api.delay.deprecated");
+        activeScanApi.getApiView("optionDelayInMs").setDeprecatedDescription(deprecationDesc);
+        activeScanApi.getApiAction("setOptionDelayInMs").setDeprecatedDescription(deprecationDesc);
     }
 
     private ImageIcon createIcon(String iconName) {
@@ -332,6 +337,7 @@ public class ExtensionActiveScan extends ExtensionAdaptor
                         @Override
                         public void actionPerformed(java.awt.event.ActionEvent e) {
                             showPolicyManagerDialog();
+                            Stats.incCounter("stats.ui.maintoolbar.button.ascan.policy");
                         }
                     });
         }

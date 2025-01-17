@@ -56,6 +56,7 @@ import org.zaproxy.zap.control.ExtensionFactory;
 import org.zaproxy.zap.extension.AddOnInstallationStatusListener;
 import org.zaproxy.zap.utils.DisplayUtils;
 import org.zaproxy.zap.utils.LocaleUtils;
+import org.zaproxy.zap.utils.Stats;
 import org.zaproxy.zap.view.ZapMenuItem;
 
 /** Loads the core help files and provides GUI elements to access them. */
@@ -85,7 +86,9 @@ public class ExtensionHelp extends ExtensionAdaptor {
      */
     public static final String HELP_SET_FILE_EXTENSION = "hs";
 
-    /** @deprecated (2.7.0) Use {@link #getHelpIcon()} instead. */
+    /**
+     * @deprecated (2.7.0) Use {@link #getHelpIcon()} instead.
+     */
     @Deprecated
     public static final ImageIcon HELP_ICON = View.isInitialised() ? getHelpIcon() : null;
 
@@ -144,8 +147,6 @@ public class ExtensionHelp extends ExtensionAdaptor {
 
     @Override
     public void initView(ViewDelegate view) {
-        super.initView(view);
-
         SwingHelpUtilities.setContentViewerUI(BasicOnlineContentViewerUI.class.getCanonicalName());
         UIManager.getDefaults()
                 .put(
@@ -279,7 +280,7 @@ public class ExtensionHelp extends ExtensionAdaptor {
             LOGGER.debug("Loading help for '{}' add-on and merging with core help.", addOn.getId());
             addHelpSet(addOn, new HelpSet(classLoader, helpSetUrl));
         } catch (HelpSetException e) {
-            LOGGER.error("An error occured while adding help for '{}' add-on:", addOn.getId(), e);
+            LOGGER.error("An error occurred while adding help for '{}' add-on:", addOn.getId(), e);
         }
     }
 
@@ -299,7 +300,7 @@ public class ExtensionHelp extends ExtensionAdaptor {
                         ext.getAddOn(), new HelpSet(ext.getClass().getClassLoader(), helpSetUrl));
             } catch (HelpSetException e) {
                 LOGGER.error(
-                        "An error occured while adding help file of extension '{}': {}",
+                        "An error occurred while adding help file of extension '{}': {}",
                         ext.getName(),
                         e.getMessage(),
                         e);
@@ -427,7 +428,9 @@ public class ExtensionHelp extends ExtensionAdaptor {
     }
     */
 
-    /** @see #showHelp(String) */
+    /**
+     * @see #showHelp(String)
+     */
     public static void showHelp() {
         showHelp("zap.intro");
     }
@@ -468,6 +471,7 @@ public class ExtensionHelp extends ExtensionAdaptor {
                         @Override
                         public void actionPerformed(java.awt.event.ActionEvent e) {
                             showHelp();
+                            Stats.incCounter("stats.ui.maintoolbar.button.help");
                         }
                     });
         }
@@ -497,7 +501,23 @@ public class ExtensionHelp extends ExtensionAdaptor {
     private class AddOnInstallationStatusListenerImpl implements AddOnInstallationStatusListener {
 
         @Override
-        public void addOnInstalled(AddOn addOn) {
+        public void update(StatusUpdate statusUpdate) {
+            switch (statusUpdate.getStatus()) {
+                case INSTALLED:
+                    installed(statusUpdate.getAddOn());
+                    break;
+
+                case SOFT_UNINSTALLED:
+                case UNINSTALLED:
+                    uninstalled(statusUpdate.getAddOn());
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        private void installed(AddOn addOn) {
             if (hb == null) {
                 if (findHelpSetUrl() != null) {
                     setHelpEnabled(true);
@@ -507,13 +527,7 @@ public class ExtensionHelp extends ExtensionAdaptor {
             }
         }
 
-        @Override
-        public void addOnSoftUninstalled(AddOn addOn, boolean successfully) {
-            addOnUninstalled(addOn, successfully);
-        }
-
-        @Override
-        public void addOnUninstalled(AddOn addOn, boolean successfully) {
+        private void uninstalled(AddOn addOn) {
             HelpBroker hbLocal = hb;
             if (hbLocal == null) {
                 return;

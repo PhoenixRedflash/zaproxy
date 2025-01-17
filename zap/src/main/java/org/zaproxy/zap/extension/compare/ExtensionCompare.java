@@ -170,7 +170,8 @@ public class ExtensionCompare extends ExtensionAdaptor
                         HistoryReference.TYPE_PROXIED,
                         HistoryReference.TYPE_ZAP_USER,
                         HistoryReference.TYPE_SPIDER,
-                        HistoryReference.TYPE_SPIDER_AJAX);
+                        HistoryReference.TYPE_SPIDER_AJAX,
+                        HistoryReference.TYPE_CLIENT_SPIDER);
 
         for (Integer hId : hIds) {
             RecordHistory recH = th.read(hId);
@@ -231,7 +232,7 @@ public class ExtensionCompare extends ExtensionAdaptor
 
                 // TODO support other implementations in the future
                 ParosDatabase db = new ParosDatabase();
-                db.setDatabaseParam(new DatabaseParam());
+                db.setDatabaseOptions(new DatabaseParam());
                 db.open(file.getAbsolutePath());
 
                 Map<String, String> curMap = new HashMap<>();

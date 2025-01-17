@@ -24,6 +24,7 @@ Scan rules:
 10000   Password Autocomplete in browser [Deprecated]
 10001   Secure page browser cache [Deprecated]
 10003   Retire JS
+10004   Technology Detection
 
 10009   In Page Banner Info Leak
 10010   Cookie set without HttpOnly flag
@@ -102,6 +103,8 @@ Scan rules:
 10111   Authentication Request Detection (info)
 10112   Session Handling Detection (info)
 10113   Verification Detection (info)
+10114   Same Origin Method Execution (SOME)
+10115   Script served from malicious polyfill.io domain
 
 10200   Beast (via HTTPS Info Extension) [Deprecated]
 10201   Crime (via HTTPS Info Extension) [Deprecated]
@@ -197,6 +200,7 @@ Scan rules:
 90002   Java Serialized Object
 90003   Subresource Integrity Attribute Missing
 90004   Cross-Origin Resource Policy [Site Isolation Headers (Spectre)]
+90005   Fetch Metadata Request Headers
 90011   Charset Mismatch
 90017	XSLT Injection
 90018   SQL Injection SQLMap
@@ -219,6 +223,7 @@ Scan rules:
 90037   Command Injection (Timing Based)
 90038   SQL Injection SQLite (Timing Based)
 90039   NoSQL Injection MongoDB (Timing Based)
+90040   DNS add-on SPF rule
 
 100000  Client/Server HTTP Error Response Codes [Script]
 100001  Unexpected Content Types [Script]
@@ -254,6 +259,9 @@ Scan rules:
 100031  DNS Email Spoofing [Script]
 100032  WordPress Username Enumeration [Script]
 100033  Server Side Template Injection [Script]
+100034  Information Disclosure - Google API Key [Script]
+100035  Information Disclosure - Java Stack Trace [Script]
+100036  Information Disclosure - Amazon S3 Bucket URL [Script]
 
 110000  Websocket Passive Scan scripts
 110001  Application Error Disclosure [Script]
@@ -264,6 +272,11 @@ Scan rules:
 110006  Private IP Disclosure [Script]
 110007  Username Disclosure [Script]
 110008  Suspicious XML Comments Disclosure [Script]
+110009  Full Path Disclosure Scan
+
+120000  Information Disclosure - Information in Browser Storage
+120001  Information Disclosure - Sensitive Information in Browser Storage
+120002  Information Disclosure - JWT in Browser Storage
 
 322420463 Retire.js (3rd Party)
 

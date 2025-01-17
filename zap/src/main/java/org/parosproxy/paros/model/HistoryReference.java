@@ -123,6 +123,7 @@ public class HistoryReference {
     public static final int TYPE_HIDDEN = 6;
     // ZAP: Added TYPE_BRUTE_FORCE
     public static final int TYPE_BRUTE_FORCE = 7;
+
     /**
      * A HTTP message sent by the fuzzer.
      *
@@ -132,6 +133,7 @@ public class HistoryReference {
      * @see #TYPE_FUZZER_TEMPORARY
      */
     public static final int TYPE_FUZZER = 8;
+
     /**
      * A (temporary) HTTP message of the spider.
      *
@@ -152,6 +154,7 @@ public class HistoryReference {
      * @see #TYPE_SPIDER_AJAX_TEMPORARY
      */
     public static final int TYPE_SPIDER_AJAX = 10;
+
     /**
      * A (temporary) HTTP message that (attempts to) authenticates a {@link
      * org.zaproxy.zap.users.User User}.
@@ -160,6 +163,7 @@ public class HistoryReference {
      * @see #DEFAULT_TEMPORARY_HISTORY_TYPES
      */
     public static final int TYPE_AUTHENTICATION = 11;
+
     // ZAP: Added TYPE_ACCESS_CONTROL for use in access control testing methods
     public static final int TYPE_ACCESS_CONTROL = 13;
 
@@ -283,6 +287,22 @@ public class HistoryReference {
      */
     public static final int TYPE_PARAM_DIGGER = 23;
 
+    /**
+     * An HTTP message sent by the Client Spider.
+     *
+     * @since 2.16.0
+     */
+    public static final int TYPE_CLIENT_SPIDER = 24;
+
+    /**
+     * A temporary HTTP message of the Client Spider.
+     *
+     * <p>A message that was not allowed to be sent.
+     *
+     * @since 2.16.0
+     */
+    public static final int TYPE_CLIENT_SPIDER_TEMPORARY = 25;
+
     private static java.text.DecimalFormat decimalFormat = new java.text.DecimalFormat("##0.###");
     private static TableHistory staticTableHistory = null;
     // ZAP: Support for multiple tags
@@ -300,6 +320,7 @@ public class HistoryReference {
         defaultHistoryTypes.add(HistoryReference.TYPE_SPIDER_AJAX_TEMPORARY);
         defaultHistoryTypes.add(HistoryReference.TYPE_SPIDER_TEMPORARY);
         defaultHistoryTypes.add(HistoryReference.TYPE_FUZZER_TEMPORARY);
+        defaultHistoryTypes.add(HistoryReference.TYPE_CLIENT_SPIDER_TEMPORARY);
         DEFAULT_TEMPORARY_HISTORY_TYPES = Collections.unmodifiableSet(defaultHistoryTypes);
 
         TEMPORARY_HISTORY_TYPES.addAll(DEFAULT_TEMPORARY_HISTORY_TYPES);
@@ -326,7 +347,9 @@ public class HistoryReference {
     private HttpMessage httpMessage;
     private HttpMessageCachedData httpMessageCachedData;
 
-    /** @return Returns the sessionId. */
+    /**
+     * @return Returns the sessionId.
+     */
     public long getSessionId() {
         return sessionId;
     }
@@ -392,12 +415,16 @@ public class HistoryReference {
         }
     }
 
-    /** @return whether the icon has to be cleaned when being manually visited or not. */
+    /**
+     * @return whether the icon has to be cleaned when being manually visited or not.
+     */
     public ArrayList<Boolean> getClearIfManual() {
         return this.clearIfManual;
     }
 
-    /** @return The icon's string path (i.e. /resource/icon/16/xx.png) */
+    /**
+     * @return The icon's string path (i.e. /resource/icon/16/xx.png)
+     */
     public ArrayList<String> getCustomIcons() {
         return this.icons;
     }
@@ -438,7 +465,10 @@ public class HistoryReference {
     public static void setTableAlert(TableAlert tableAlert) {
         staticTableAlert = tableAlert;
     }
-    /** @return Returns the historyId. */
+
+    /**
+     * @return Returns the historyId.
+     */
     public int getHistoryId() {
         return historyId;
     }
@@ -499,7 +529,9 @@ public class HistoryReference {
         return display;
     }
 
-    /** @return Returns the historyType. */
+    /**
+     * @return Returns the historyType.
+     */
     public int getHistoryType() {
         return historyType;
     }
@@ -521,11 +553,16 @@ public class HistoryReference {
         }
     }
 
-    /** @return Returns the siteNode. */
+    /**
+     * @return Returns the siteNode.
+     */
     public SiteNode getSiteNode() {
         return siteNode;
     }
-    /** @param siteNode The siteNode to set. */
+
+    /**
+     * @param siteNode The siteNode to set.
+     */
     public void setSiteNode(SiteNode siteNode) {
         this.siteNode = siteNode;
     }

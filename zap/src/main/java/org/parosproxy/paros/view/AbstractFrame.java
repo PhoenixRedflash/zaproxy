@@ -44,6 +44,7 @@ import java.awt.event.WindowStateListener;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.JFrame;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
@@ -80,15 +81,24 @@ public class AbstractFrame extends JFrame {
     /** Hint: Preferences are only saved by package. We have to use a prefix for separation. */
     private final Preferences preferences;
 
-    private final String prefnzPrefix = this.getClass().getSimpleName() + ".";
+    private final String prefnzPrefix;
     private static final Logger LOGGER = LogManager.getLogger(AbstractFrame.class);
 
     /** This is the default constructor */
     public AbstractFrame() {
+        this(null);
+    }
+
+    protected AbstractFrame(String prefnzPrefix) {
         super();
         this.preferences = Preferences.userNodeForPackage(getClass());
+        this.prefnzPrefix =
+                prefnzPrefix == null
+                        ? this.getClass().getSimpleName() + "."
+                        : StringUtils.left(prefnzPrefix, Preferences.MAX_KEY_LENGTH);
         initialize();
     }
+
     /** This method initializes this */
     private void initialize() {
         // ZAP: Rebrand
@@ -109,6 +119,7 @@ public class AbstractFrame extends JFrame {
         this.addWindowStateListener(new FrameWindowStateListener());
         this.addComponentListener(new FrameResizedListener());
     }
+
     /** Centre this frame. */
     public void centerFrame() {
         final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -124,7 +135,9 @@ public class AbstractFrame extends JFrame {
                 (screenSize.height - frameSize.height) / 2);
     }
 
-    /** @param windowstate integer value, see {@link JFrame#getExtendedState()} */
+    /**
+     * @param windowstate integer value, see {@link JFrame#getExtendedState()}
+     */
     private void saveWindowState(int windowstate) {
         if ((windowstate & Frame.ICONIFIED) == Frame.ICONIFIED) {
             preferences.put(
